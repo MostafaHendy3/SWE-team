@@ -6,6 +6,7 @@
 #include "PropertyManager.h"
 #include "UserManager.h"
 #include "DBManager.h"
+#include "FilterationManager.h"
 using namespace std;
 
 void textattr(int i)
@@ -72,12 +73,16 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
     system("cls");
     PropertyManager pm;
     UserManager um;
+    SearchManager sm(dbManager);
+
 
     switch (choice)
     {
-    case 0:
-        pm.viewAllProperties(db, dbManager);
+    case 0:{
+
+        pm.ViewAllProperies( db, dbManager);
         break;
+    }
 
     case 1:
 
@@ -87,8 +92,7 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
         break;
 
     case 2:
-        // You can add your search function call here later
-        cout << "Search functionality coming soon...";
+        sm.interactiveSearch(db);
         break;
 
     case 3:
