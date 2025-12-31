@@ -32,10 +32,16 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="ConsoleUtils.h" />
 		<Unit filename="DBManager.h" />
-		<Unit filename="PropertyManager.h" />
-		<Unit filename="UserManager.cpp" />
+		<Unit filename="FilterationManager.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Helpers.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="PropertyManager.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="UserManager.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="sqlite3.c">

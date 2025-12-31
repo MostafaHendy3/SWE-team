@@ -10,6 +10,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <iostream>
+#include <cstdlib>
 #include "ConsoleUtils.h"
 #define NORMAL_PEN 0x07
 #define HIGHLIGHTED_PEN 0x70
@@ -71,7 +72,7 @@ public:
         gotoxy(startX + 2, startY + 15);
         textattr(8);
         cout << "Available Owners: ";
-        
+
         string ownerSql = "SELECT owner_id, name FROM owners;";
         sqlite3_stmt* ownerStmt;
         if (sqlite3_prepare_v2(db, ownerSql.c_str(), -1, &ownerStmt, nullptr) == SQLITE_OK) {
@@ -170,7 +171,7 @@ public:
     // ================= DELETE PROPERTY =================
     void deleteProperty(sqlite3* db) {
         system("cls");
-        
+
         // Show all properties in a table format
         textattr(11);
         cout << "====== ALL PROPERTIES ======\n\n";
@@ -181,7 +182,7 @@ public:
         string listSql = "SELECT id, name, location, price, type, isAvailable FROM properties;";
         sqlite3_stmt* listStmt;
         vector<int> propertyIds;
-        
+
         if (sqlite3_prepare_v2(db, listSql.c_str(), -1, &listStmt, nullptr) == SQLITE_OK) {
             while (sqlite3_step(listStmt) == SQLITE_ROW) {
                 int id = sqlite3_column_int(listStmt, 0);
@@ -190,9 +191,9 @@ public:
                 double price = sqlite3_column_double(listStmt, 3);
                 string type = (const char*)sqlite3_column_text(listStmt, 4);
                 int available = sqlite3_column_int(listStmt, 5);
-                
+
                 propertyIds.push_back(id);
-                
+
                 cout << setw(5) << id << " | ";
                 cout << setw(18) << name.substr(0, 18) << " | ";
                 cout << setw(16) << location.substr(0, 16) << " | ";
@@ -215,7 +216,7 @@ public:
         textattr(14);
         cout << "Enter Property ID to delete: ";
         textattr(15);
-        
+
         int id;
         cin >> id;
         cin.ignore();
@@ -415,13 +416,13 @@ public:
             // Draw labels with proper spacing
             int startX = 5;
             int maxLabelWidth = 0;
-            
+
             // Find the longest label + value combination
             for(int i=0;i<lineno;i++) {
                 int currentWidth = fields[i].length() + values[i].length() + 15;
                 if (currentWidth > maxLabelWidth) maxLabelWidth = currentWidth;
             }
-            
+
             for(int i=0;i<lineno;i++) {
                 gotoxy(startX, 5 + i*2);
                 cout << fields[i] << " (last value: " << values[i] << "): ";

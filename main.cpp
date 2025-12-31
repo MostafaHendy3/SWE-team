@@ -6,9 +6,9 @@
 #include "PropertyManager.h"
 #include "UserManager.h"
 #include "DBManager.h"
+#include "FilterationManager.h"
 #include "AdminManager.h"
 #include "ConsoleUtils.h"
-
 using namespace std;
 
 bool isLoggedIn = false;
@@ -107,13 +107,15 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
     system("cls");
     PropertyManager pm;
     UserManager um;
+    SearchManager sm(dbManager);
     AdminManager am;
 
     if (!isLoggedIn)
     {
+
         switch (choice)
         {
-        case 0: pm.viewAllProperties(db); break;
+        case 0: pm.ViewAllProperies(db,dbManager); break;
         case 1: // Login
             if (um.login(db))
             {
@@ -122,7 +124,7 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
             }
             break;
         case 2: um.signup(db); break;
-        case 3: cout << "Search functionality coming soon..."; break;
+        case 3: sm.interactiveSearch(db); break;
         case 4: cout << "Exiting system...\n"; return false;
         }
     }
@@ -134,7 +136,7 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
         case 1: am.deleteProperty(db); break;
         case 2: am.updateProperty(db); break;
         case 3: am.lockUnlockProperty(db); break;
-        case 4: pm.viewAllProperties(db); break;
+        case 4: pm.ViewAllProperies(db,dbManager); break;
         case 5: am.viewPropertiesByOwner(db); break;
         case 6: isLoggedIn = false; isAdmin = false; currentUserId=-1; currentUserEmail=""; cout << "Logged out successfully!"; break;
         }
@@ -143,9 +145,9 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
     {
         switch (choice)
         {
-        case 0: pm.viewAllProperties(db); break;
+        case 0: pm.ViewAllProperies(db,dbManager); break;
         case 1: isLoggedIn = false; currentUserId = -1; currentUserEmail=""; cout << "Logged out successfully!"; break;
-        case 2: cout << "Search functionality coming soon..."; break;
+        case 2: sm.interactiveSearch(db); break;
         case 3: cout << "Exiting system...\n"; return false;
         }
     }
