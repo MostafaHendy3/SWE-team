@@ -57,6 +57,7 @@ void drawMenu(int selected, bool firstDraw)
 
     const char* menuAdmin[] = {
         "Add Property",
+        "Delete Property",
         "Update Property",
         "Lock/Unlock Property",
         "View All Properties",
@@ -69,7 +70,7 @@ void drawMenu(int selected, bool firstDraw)
 
     if (isLoggedIn && isAdmin) {
         menu = menuAdmin;
-        numOptions = 6;
+        numOptions = 7;
     }
     else if (isLoggedIn) {
         menu = menuUser;
@@ -129,12 +130,13 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
     {
         switch (choice)
         {
-        case 0: cout << "Add Property (coming soon)..."; break;
-        case 1: am.updateProperty(db); break;
-        case 2: am.lockUnlockProperty(db); break;
-        case 3: pm.viewAllProperties(db); break;
-        case 4: am.viewPropertiesByOwner(db); break;
-        case 5: isLoggedIn = false; isAdmin = false; currentUserId=-1; currentUserEmail=""; cout << "Logged out successfully!"; break;
+        case 0: am.addProperty(db); break;
+        case 1: am.deleteProperty(db); break;
+        case 2: am.updateProperty(db); break;
+        case 3: am.lockUnlockProperty(db); break;
+        case 4: pm.viewAllProperties(db); break;
+        case 5: am.viewPropertiesByOwner(db); break;
+        case 6: isLoggedIn = false; isAdmin = false; currentUserId=-1; currentUserEmail=""; cout << "Logged out successfully!"; break;
         }
     }
     else
@@ -177,7 +179,7 @@ void runMainMenu(sqlite3* db, DBManager* dbManager)
         int maxOption = 0;
 
         if (!isLoggedIn) maxOption = 4;
-        else if (isAdmin) maxOption = 5;
+        else if (isAdmin) maxOption = 6;
         else maxOption = 3;
 
         if (key == 72 || key == 'w' || key == 'W') selected = (selected <= 0) ? maxOption : selected - 1;
