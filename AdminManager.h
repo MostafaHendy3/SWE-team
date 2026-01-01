@@ -1,19 +1,20 @@
 #ifndef ADMIN_MANAGER_H
 #define ADMIN_MANAGER_H
 
-#include "PropertyManager.h"
-#include "UserManager.h"
+#include "DBManager.h"
+#include "Property.h"
 #include "sqlite3.h"
 #include <iostream>
 #include <string>
 #include <iomanip>
 #include <conio.h>
 #include <windows.h>
-#include <iostream>
 #include <cstdlib>
 #include "ConsoleUtils.h"
+
 #define NORMAL_PEN 0x07
 #define HIGHLIGHTED_PEN 0x70
+
 using namespace std;
 
 extern bool isLoggedIn;
@@ -33,23 +34,11 @@ private:
         return str;
     }
 
-    // Draw a fancy table for owners
-    void displayOwnersTable(sqlite3* db, int startX, int startY) {
-        string ownerSql = "SELECT owner_id, name FROM owners ORDER BY owner_id LIMIT 10;";
-        sqlite3_stmt* ownerStmt;
+    // Draw a fancy table for owners using DBManager
+    void displayOwnersTable(DBManager* dbManager, int startX, int startY) {
+        vector<pair<int, string>> owners = dbManager->getAllOwners(10);
 
-        vector<int> ownerIds;
-        vector<string> ownerNames;
-
-        if (sqlite3_prepare_v2(db, ownerSql.c_str(), -1, &ownerStmt, nullptr) == SQLITE_OK) {
-            while (sqlite3_step(ownerStmt) == SQLITE_ROW) {
-                ownerIds.push_back(sqlite3_column_int(ownerStmt, 0));
-                ownerNames.push_back((const char*)sqlite3_column_text(ownerStmt, 1));
-            }
-        }
-        sqlite3_finalize(ownerStmt);
-
-        if (ownerIds.empty()) {
+        if (owners.empty()) {
             gotoxy(startX, startY);
             textattr(12);
             cout << "No owners available!";
@@ -67,19 +56,53 @@ private:
         cout << "------+------------------------";
 
         // Draw owner data
-        for (size_t i = 0; i < ownerIds.size(); i++) {
+        for (size_t i = 0; i < owners.size(); i++) {
             gotoxy(startX, startY + 2 + i);
             textattr(11);
-            cout << " " << setw(4) << left << ownerIds[i];
+            cout << " " << setw(4) << left << owners[i].first;
             textattr(15);
-            cout << " | " << setw(20) << left << ownerNames[i].substr(0, 20);
+            cout << " | " << setw(20) << left << owners[i].second.substr(0, 20);
         }
         textattr(NORMAL_PEN);
     }
 
+    // Display properties table (reusable)
+    void displayPropertiesTable(const vector<Property>& props, bool showOwnerId = false) {
+        textattr(240);
+        if (showOwnerId) {
+            cout << " ID  | NAME              | LOCATION        | PRICE       | TYPE  | CONTACT      | ROOMS | BATHS | AREA    | OWNER ID | AVAIL\n";
+        } else {
+            cout << " ID    | NAME                | LOCATION          | PRICE              | TYPE      | AVAILABLE\n";
+        }
+        textattr(15);
+
+        for (size_t i = 0; i < props.size(); i++) {
+            if (showOwnerId) {
+                cout << setw(4) << props[i].id << " | ";
+                cout << setw(17) << props[i].name.substr(0, 17) << " | ";
+                cout << setw(15) << props[i].location.substr(0, 15) << " | ";
+                cout << "$" << setw(10) << fixed << setprecision(0) << props[i].price << " | ";
+                cout << setw(5) << props[i].type << " | ";
+                cout << setw(12) << props[i].infoNumber.substr(0, 12) << " | ";
+                cout << setw(5) << props[i].noOfRooms << " | ";
+                cout << setw(5) << props[i].noOfBaths << " | ";
+                cout << setw(7) << fixed << setprecision(1) << props[i].area << " | ";
+                cout << setw(8) << "N/A" << " | ";
+                cout << (props[i].available ? "Yes" : "No") << "\n";
+            } else {
+                cout << setw(5) << props[i].id << " | ";
+                cout << setw(18) << props[i].name.substr(0, 18) << " | ";
+                cout << setw(16) << props[i].location.substr(0, 16) << " | ";
+                cout << "$" << setw(16) << fixed << setprecision(2) << props[i].price << " | ";
+                cout << setw(8) << props[i].type << " | ";
+                cout << (props[i].available ? "Yes" : "No") << "\n";
+            }
+        }
+    }
+
 public:
     // ================= ADD PROPERTY =================
-    void addProperty(sqlite3* db) {
+    void addProperty(DBManager* dbManager) {
         system("cls");
         int width = 50, height = 22;
         int startX = 5, startY = 2;
@@ -117,16 +140,16 @@ public:
         textattr(14);
         cout << "Available Owners:";
         textattr(NORMAL_PEN);
-        displayOwnersTable(db, ownerTableX, startY + 3);
+        displayOwnersTable(dbManager, ownerTableX, startY + 3);
 
         // Input fields setup
         int lineno = 9;
         int maxLen = 30;
-        char sr[9] = {32, 32, 48, 32, 32, 48, 48, 48, 48};  // Start range
-        char er[9] = {126, 126, 57, 126, 126, 57, 57, 57, 57}; // End range
+        char sr[9] = {32, 32, 48, 32, 32, 48, 48, 48, 48};
+        char er[9] = {126, 126, 57, 126, 126, 57, 57, 57, 57};
 
         int editorX = startX + 20;
-        char** input = multiLineEditor(editorX, startY + 2, maxLen, sr, er, lineno,false);
+        char** input = multiLineEditor(editorX, startY + 2, maxLen, sr, er, lineno, false);
 
         // Trim and validate input
         string name = trim(input[0]);
@@ -173,85 +196,44 @@ public:
         double area = stod(areaStr);
         int ownerId = stoi(ownerIdStr);
 
-        // Validate owner exists
-        string checkOwnerSql = "SELECT owner_id FROM owners WHERE owner_id = " + to_string(ownerId) + ";";
-        sqlite3_stmt* checkStmt;
-        bool ownerExists = false;
-        if (sqlite3_prepare_v2(db, checkOwnerSql.c_str(), -1, &checkStmt, nullptr) == SQLITE_OK) {
-            if (sqlite3_step(checkStmt) == SQLITE_ROW) {
-                ownerExists = true;
-            }
-        }
-        sqlite3_finalize(checkStmt);
-
-        if (!ownerExists) {
+        // Validate owner exists using DBManager
+        if (!dbManager->ownerExists(ownerId)) {
             textattr(12);
             cout << "Owner ID does not exist!";
             _getch();
             return;
         }
 
-        // Insert property with all fields
-        string insertSql = "INSERT INTO properties (name, location, price, type, isAvailable, InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id) VALUES ('"
-            + name + "', '" + location + "', " + to_string(price) + ", '" + type + "', 1, '"
-            + infoNumber + "', " + to_string(rooms) + ", " + to_string(baths) + ", "
-            + to_string(area) + ", " + to_string(ownerId) + ");";
-
-        char* errMsg = nullptr;
-        if (sqlite3_exec(db, insertSql.c_str(), nullptr, nullptr, &errMsg) == SQLITE_OK) {
-            int propertyId = (int)sqlite3_last_insert_rowid(db);
+        // Insert property using DBManager
+        int newPropertyId = 0;
+        if (dbManager->addProperty(name, location, price, type, infoNumber, rooms, baths, area, ownerId, newPropertyId)) {
             textattr(10);
-            cout << "Property added successfully! Property ID: " << propertyId;
+            cout << "Property added successfully! Property ID: " << newPropertyId;
         } else {
             textattr(12);
-            cout << "Failed to add property: " << errMsg;
-            sqlite3_free(errMsg);
+            cout << "Failed to add property!";
         }
         _getch();
     }
 
     // ================= DELETE PROPERTY =================
-     void deleteProperty(sqlite3* db) {
+    void deleteProperty(DBManager* dbManager) {
         system("cls");
 
         // Show all properties in a table format
         textattr(11);
         cout << "====== ALL PROPERTIES ======\n\n";
-        textattr(240);
-        cout << " ID    | NAME                | LOCATION          | PRICE              | TYPE      | AVAILABLE\n";
-        textattr(15);
 
-        string listSql = "SELECT id, name, location, price, type, isAvailable FROM properties;";
-        sqlite3_stmt* listStmt;
-        vector<int> propertyIds;
+        vector<Property> props = dbManager->getAllPropertiesAdmin();
 
-        if (sqlite3_prepare_v2(db, listSql.c_str(), -1, &listStmt, nullptr) == SQLITE_OK) {
-            while (sqlite3_step(listStmt) == SQLITE_ROW) {
-                int id = sqlite3_column_int(listStmt, 0);
-                string name = (const char*)sqlite3_column_text(listStmt, 1);
-                string location = (const char*)sqlite3_column_text(listStmt, 2);
-                double price = sqlite3_column_double(listStmt, 3);
-                string type = (const char*)sqlite3_column_text(listStmt, 4);
-                int available = sqlite3_column_int(listStmt, 5);
-
-                propertyIds.push_back(id);
-
-                cout << setw(5) << id << " | ";
-                cout << setw(18) << name.substr(0, 18) << " | ";
-                cout << setw(16) << location.substr(0, 16) << " | ";
-                cout << "$" << setw(16) << fixed << setprecision(2) << price << " | ";
-                cout << setw(8) << type << " | ";
-                cout << (available ? "Yes" : "No") << "\n";
-            }
-        }
-        sqlite3_finalize(listStmt);
-
-        if (propertyIds.empty()) {
+        if (props.empty()) {
             textattr(12);
-            cout << "\nNo properties found in the system!";
+            cout << "No properties found in the system!";
             _getch();
             return;
         }
+
+        displayPropertiesTable(props, false);
 
         // Input property ID
         cout << "\n";
@@ -263,21 +245,9 @@ public:
         cin >> id;
         cin.ignore();
 
-        // Check if property exists
-        string checkSql = "SELECT id, name FROM properties WHERE id = " + to_string(id) + ";";
-        sqlite3_stmt* checkStmt;
-        string propName = "";
-        bool exists = false;
-
-        if (sqlite3_prepare_v2(db, checkSql.c_str(), -1, &checkStmt, nullptr) == SQLITE_OK) {
-            if (sqlite3_step(checkStmt) == SQLITE_ROW) {
-                exists = true;
-                propName = (const char*)sqlite3_column_text(checkStmt, 1);
-            }
-        }
-        sqlite3_finalize(checkStmt);
-
-        if (!exists) {
+        // Check if property exists using DBManager
+        string propName;
+        if (!dbManager->propertyExists(id, propName)) {
             textattr(12);
             cout << "\nProperty not found!";
             _getch();
@@ -299,23 +269,20 @@ public:
             return;
         }
 
-        // Delete property
-        string deleteSql = "DELETE FROM properties WHERE id = " + to_string(id) + ";";
-        char* errMsg = nullptr;
-
+        // Delete property using DBManager
         cout << "\n";
-        if (sqlite3_exec(db, deleteSql.c_str(), nullptr, nullptr, &errMsg) == SQLITE_OK) {
+        if (dbManager->deleteProperty(id)) {
             textattr(10);
             cout << "Property '" << propName << "' deleted successfully.";
         } else {
             textattr(12);
-            cout << "Failed to delete property: " << errMsg;
-            sqlite3_free(errMsg);
+            cout << "Failed to delete property!";
         }
         _getch();
     }
+
     // ================= VIEW PROPERTIES BY OWNER =================
-    void viewPropertiesByOwner(sqlite3* db) {
+    void viewPropertiesByOwner(DBManager* dbManager) {
         system("cls");
 
         textattr(14);
@@ -323,7 +290,7 @@ public:
         textattr(NORMAL_PEN);
 
         // Display owners table
-        displayOwnersTable(db, 5, 3);
+        displayOwnersTable(dbManager, 5, 3);
 
         cout << "\n\n";
         textattr(14);
@@ -334,39 +301,9 @@ public:
         cin >> ownerId;
         cin.ignore();
 
-        std::string sql = "SELECT p.id, p.name, p.location, p.price, p.type, p.isAvailable, p.InfoNumber, "
-                          "p.NoOfRooms, p.NoOfBaths, p.Area, o.name, o.owner_id "
-                          "FROM properties p "
-                          "JOIN owners o ON p.owner_id = o.owner_id "
-                          "WHERE o.owner_id = " + std::to_string(ownerId) + ";";
-
-        sqlite3_stmt* stmt;
-        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
-            textattr(12);
-            cout << "Failed to prepare statement.\n";
-            _getch();
-            return;
-        }
-
-        vector<Property> props;
-        string ownerName = "";
-
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            Property p;
-            p.id = sqlite3_column_int(stmt, 0);
-            p.name = (const char*)sqlite3_column_text(stmt, 1);
-            p.location = (const char*)sqlite3_column_text(stmt, 2);
-            p.price = sqlite3_column_double(stmt, 3);
-            p.type = (const char*)sqlite3_column_text(stmt, 4);
-            p.available = sqlite3_column_int(stmt, 5);
-            p.infoNumber = (const char*)sqlite3_column_text(stmt, 6);
-            p.noOfRooms = sqlite3_column_int(stmt, 7);
-            p.noOfBaths = sqlite3_column_int(stmt, 8);
-            p.area = sqlite3_column_double(stmt, 9);
-            ownerName = (const char*)sqlite3_column_text(stmt, 10);
-            props.push_back(p);
-        }
-        sqlite3_finalize(stmt);
+        // Get properties by owner using DBManager
+        string ownerName;
+        vector<Property> props = dbManager->getPropertiesByOwner(ownerId, ownerName);
 
         if (props.empty()) {
             textattr(12);
@@ -398,10 +335,8 @@ public:
         _getch();
     }
 
-
-
     // ================= LOCK/UNLOCK PROPERTY =================
-    void lockUnlockProperty(sqlite3* db) {
+    void lockUnlockProperty(DBManager* dbManager) {
         system("cls");
 
         textattr(14);
@@ -413,33 +348,21 @@ public:
         cin >> id;
         cin.ignore();
 
-        sqlite3_stmt* stmt;
-        string sql = "SELECT isAvailable, name FROM properties WHERE id=" + to_string(id);
-        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
-            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                int available = sqlite3_column_int(stmt, 0);
-                string propName = (const char*)sqlite3_column_text(stmt, 1);
-                sqlite3_finalize(stmt);
+        string propName;
+        bool newStatus;
 
-                string sqlUpdate = "UPDATE properties SET isAvailable=" + to_string(available == 1 ? 0 : 1) + " WHERE id=" + to_string(id);
-                if (sqlite3_exec(db, sqlUpdate.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK) {
-                    textattr(10);
-                    cout << "\nProperty '" << propName << "' " << (available == 1 ? "locked" : "unlocked") << " successfully.\n";
-                } else {
-                    textattr(12);
-                    cout << "\nFailed to update property.\n";
-                }
-                _getch();
-            } else {
-                textattr(12);
-                cout << "\nProperty not found.\n";
-                sqlite3_finalize(stmt);
-                _getch();
-            }
+        if (dbManager->togglePropertyAvailability(id, propName, newStatus)) {
+            textattr(10);
+            cout << "\nProperty '" << propName << "' " << (newStatus ? "unlocked" : "locked") << " successfully.\n";
+        } else {
+            textattr(12);
+            cout << "\nProperty not found or failed to update.\n";
         }
+        _getch();
     }
+
     // ================= UPDATE PROPERTY =================
-    void updateProperty(sqlite3* db) {
+    void updateProperty(DBManager* dbManager) {
         system("cls");
 
         textattr(14);
@@ -451,216 +374,161 @@ public:
         cin >> id;
         cin.ignore();
 
-        sqlite3_stmt* stmt;
-        string sql = "SELECT p.id, p.name, p.location, p.price, p.type, p.isAvailable, p.InfoNumber, "
-                     "p.NoOfRooms, p.NoOfBaths, p.Area, p.owner_id "
-                     "FROM properties p WHERE p.id=" + to_string(id);
+        Property p;
+        int currentOwnerId;
 
-        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
-            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                Property p;
-                p.id = sqlite3_column_int(stmt, 0);
-                p.name = (const char*)sqlite3_column_text(stmt, 1);
-                p.location = (const char*)sqlite3_column_text(stmt, 2);
-                p.price = sqlite3_column_double(stmt, 3);
-                p.type = (const char*)sqlite3_column_text(stmt, 4);
-                p.available = sqlite3_column_int(stmt, 5);
-                p.infoNumber = (const char*)sqlite3_column_text(stmt, 6);
-                p.noOfRooms = sqlite3_column_int(stmt, 7);
-                p.noOfBaths = sqlite3_column_int(stmt, 8);
-                p.area = sqlite3_column_double(stmt, 9);
-                int currentOwnerId = sqlite3_column_int(stmt, 10);
+        if (!dbManager->getPropertyByIdWithOwner(id, p, currentOwnerId)) {
+            textattr(12);
+            cout << "\nProperty not found.\n";
+            _getch();
+            return;
+        }
 
-                sqlite3_finalize(stmt);
+        system("cls");
+        int width = 50, height = 24;
+        int startX = 5, startY = 2;
 
-                system("cls");
-                int width = 50, height = 24;
-                int startX = 5, startY = 2;
-
-                // Draw frame
-                for (int y = startY; y <= startY + height; y++) {
-                    gotoxy(startX, y);
-                    for (int x = startX; x <= startX + width; x++) {
-                        if (y == startY || y == startY + height) cout << "=";
-                        else if (x == startX || x == startX + width) cout << "|";
-                        else cout << " ";
-                    }
-                }
-
-                // Title
-                gotoxy(startX + 15, startY);
-                textattr(HIGHLIGHTED_PEN);
-                cout << " UPDATE PROPERTY ";
-                textattr(NORMAL_PEN);
-
-                // Display current property info
-                gotoxy(startX + 2, startY + 2);
-                textattr(11);
-                cout << "Property ID: " << p.id;
-                textattr(NORMAL_PEN);
-
-                // Labels
-                int labelY = startY + 4;
-                gotoxy(startX + 2, labelY);      cout << "Name:";
-                gotoxy(startX + 2, labelY + 2);  cout << "Location:";
-                gotoxy(startX + 2, labelY + 4);  cout << "Price:";
-                gotoxy(startX + 2, labelY + 6);  cout << "Type:";
-                gotoxy(startX + 2, labelY + 8);  cout << "Contact:";
-                gotoxy(startX + 2, labelY + 10); cout << "Rooms:";
-                gotoxy(startX + 2, labelY + 12); cout << "Baths:";
-                gotoxy(startX + 2, labelY + 14); cout << "Area:";
-                gotoxy(startX + 2, labelY + 16); cout << "Owner ID:";
-
-                gotoxy(startX + 2, labelY + 18);
-                textattr(8);
-                cout << "Blank = keep: " << p.name.substr(0,10) << "..";
-                textattr(NORMAL_PEN);
-
-                // Display owners table OUTSIDE the box on the right side
-                int ownerTableX = startX + width + 5;
-                gotoxy(ownerTableX, startY + 2);
-                textattr(14);
-                cout << "Available Owners:";
-                textattr(NORMAL_PEN);
-                displayOwnersTable(db, ownerTableX, startY + 3);
-
-                int lineno = 9;
-                int maxLen = 30;
-                char sr[9] = {32, 32, 48, 32, 32, 48, 48, 48, 48};
-                char er[9] = {126, 126, 57, 126, 126, 57, 57, 57, 57};
-
-                int editorX = startX + 15;
-                char** editedLines = multiLineEditor(editorX, labelY, maxLen, sr, er, lineno,false);
-
-                string newName = strlen(editedLines[0]) > 0 ? trim(editedLines[0]) : p.name;
-                string newLocation = strlen(editedLines[1]) > 0 ? trim(editedLines[1]) : p.location;
-                string newPriceStr = trim(editedLines[2]);
-                string newType = strlen(editedLines[3]) > 0 ? trim(editedLines[3]) : p.type;
-                string newContact = strlen(editedLines[4]) > 0 ? trim(editedLines[4]) : p.infoNumber;
-                string newRoomsStr = trim(editedLines[5]);
-                string newBathsStr = trim(editedLines[6]);
-                string newAreaStr = trim(editedLines[7]);
-                string newOwnerIdStr = trim(editedLines[8]);
-
-                double newPrice = newPriceStr.empty() ? p.price : stod(newPriceStr);
-                int newRooms = newRoomsStr.empty() ? p.noOfRooms : stoi(newRoomsStr);
-                int newBaths = newBathsStr.empty() ? p.noOfBaths : stoi(newBathsStr);
-                double newArea = newAreaStr.empty() ? p.area : stod(newAreaStr);
-                int newOwnerId = newOwnerIdStr.empty() ? currentOwnerId : stoi(newOwnerIdStr);
-
-                for (int i = 0; i < lineno; i++) delete[] editedLines[i];
-                delete[] editedLines;
-
-                // Validate type
-                if (newType != "Buy" && newType != "Rent" && newType != "buy" && newType != "rent") {
-                    gotoxy(startX + 2, startY + height + 2);
-                    textattr(12);
-                    cout << "Type must be 'Buy' or 'Rent'!";
-                    _getch();
-                    return;
-                }
-
-                // Normalize type
-                if (newType == "buy") newType = "Buy";
-                if (newType == "rent") newType = "Rent";
-
-                // Validate owner exists
-                string checkOwnerSql = "SELECT owner_id FROM owners WHERE owner_id = " + to_string(newOwnerId) + ";";
-                sqlite3_stmt* checkStmt;
-                bool ownerExists = false;
-                if (sqlite3_prepare_v2(db, checkOwnerSql.c_str(), -1, &checkStmt, nullptr) == SQLITE_OK) {
-                    if (sqlite3_step(checkStmt) == SQLITE_ROW) {
-                        ownerExists = true;
-                    }
-                }
-                sqlite3_finalize(checkStmt);
-
-                if (!ownerExists) {
-                    gotoxy(startX + 2, startY + height + 2);
-                    textattr(12);
-                    cout << "Owner ID does not exist!";
-                    _getch();
-                    return;
-                }
-
-                string sqlUpdate = "UPDATE properties SET name='" + newName +
-                                    "', location='" + newLocation +
-                                    "', price=" + to_string(newPrice) +
-                                    ", type='" + newType +
-                                    "', InfoNumber='" + newContact +
-                                    "', NoOfRooms=" + to_string(newRooms) +
-                                    ", NoOfBaths=" + to_string(newBaths) +
-                                    ", Area=" + to_string(newArea) +
-                                    ", owner_id=" + to_string(newOwnerId) +
-                                    " WHERE id=" + to_string(p.id);
-
-                gotoxy(startX + 2, startY + height + 2);
-                if (sqlite3_exec(db, sqlUpdate.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK) {
-                    textattr(10);
-                    cout << "Property updated successfully!";
-                } else {
-                    textattr(12);
-                    cout << "Failed to update property.";
-                }
-
-                _getch();
-            } else {
-                textattr(12);
-                cout << "\nProperty not found.\n";
-                sqlite3_finalize(stmt);
-                _getch();
+        // Draw frame
+        for (int y = startY; y <= startY + height; y++) {
+            gotoxy(startX, y);
+            for (int x = startX; x <= startX + width; x++) {
+                if (y == startY || y == startY + height) cout << "=";
+                else if (x == startX || x == startX + width) cout << "|";
+                else cout << " ";
             }
         }
+
+        // Title
+        gotoxy(startX + 15, startY);
+        textattr(HIGHLIGHTED_PEN);
+        cout << " UPDATE PROPERTY ";
+        textattr(NORMAL_PEN);
+
+        // Display current property info
+        gotoxy(startX + 2, startY + 2);
+        textattr(11);
+        cout << "Property ID: " << p.id;
+        textattr(NORMAL_PEN);
+
+        // Labels
+        int labelY = startY + 4;
+        gotoxy(startX + 2, labelY);      cout << "Name:";
+        gotoxy(startX + 2, labelY + 2);  cout << "Location:";
+        gotoxy(startX + 2, labelY + 4);  cout << "Price:";
+        gotoxy(startX + 2, labelY + 6);  cout << "Type:";
+        gotoxy(startX + 2, labelY + 8);  cout << "Contact:";
+        gotoxy(startX + 2, labelY + 10); cout << "Rooms:";
+        gotoxy(startX + 2, labelY + 12); cout << "Baths:";
+        gotoxy(startX + 2, labelY + 14); cout << "Area:";
+        gotoxy(startX + 2, labelY + 16); cout << "Owner ID:";
+
+        gotoxy(startX + 2, labelY + 18);
+        textattr(8);
+        cout << "Blank = keep: " << p.name.substr(0, 10) << "..";
+        textattr(NORMAL_PEN);
+
+        // Display owners table OUTSIDE the box on the right side
+        int ownerTableX = startX + width + 5;
+        gotoxy(ownerTableX, startY + 2);
+        textattr(14);
+        cout << "Available Owners:";
+        textattr(NORMAL_PEN);
+        displayOwnersTable(dbManager, ownerTableX, startY + 3);
+
+        int lineno = 9;
+        int maxLen = 30;
+        char sr[9] = {32, 32, 48, 32, 32, 48, 48, 48, 48};
+        char er[9] = {126, 126, 57, 126, 126, 57, 57, 57, 57};
+
+        int editorX = startX + 15;
+        char** editedLines = multiLineEditor(editorX, labelY, maxLen, sr, er, lineno, false);
+
+        string newName = strlen(editedLines[0]) > 0 ? trim(editedLines[0]) : p.name;
+        string newLocation = strlen(editedLines[1]) > 0 ? trim(editedLines[1]) : p.location;
+        string newPriceStr = trim(editedLines[2]);
+        string newType = strlen(editedLines[3]) > 0 ? trim(editedLines[3]) : p.type;
+        string newContact = strlen(editedLines[4]) > 0 ? trim(editedLines[4]) : p.infoNumber;
+        string newRoomsStr = trim(editedLines[5]);
+        string newBathsStr = trim(editedLines[6]);
+        string newAreaStr = trim(editedLines[7]);
+        string newOwnerIdStr = trim(editedLines[8]);
+
+        double newPrice = newPriceStr.empty() ? p.price : stod(newPriceStr);
+        int newRooms = newRoomsStr.empty() ? p.noOfRooms : stoi(newRoomsStr);
+        int newBaths = newBathsStr.empty() ? p.noOfBaths : stoi(newBathsStr);
+        double newArea = newAreaStr.empty() ? p.area : stod(newAreaStr);
+        int newOwnerId = newOwnerIdStr.empty() ? currentOwnerId : stoi(newOwnerIdStr);
+
+        for (int i = 0; i < lineno; i++) delete[] editedLines[i];
+        delete[] editedLines;
+
+        // Validate type
+        if (newType != "Buy" && newType != "Rent" && newType != "buy" && newType != "rent") {
+            gotoxy(startX + 2, startY + height + 2);
+            textattr(12);
+            cout << "Type must be 'Buy' or 'Rent'!";
+            _getch();
+            return;
+        }
+
+        // Normalize type
+        if (newType == "buy") newType = "Buy";
+        if (newType == "rent") newType = "Rent";
+
+        // Validate owner exists using DBManager
+        if (!dbManager->ownerExists(newOwnerId)) {
+            gotoxy(startX + 2, startY + height + 2);
+            textattr(12);
+            cout << "Owner ID does not exist!";
+            _getch();
+            return;
+        }
+
+        // Update property using DBManager
+        gotoxy(startX + 2, startY + height + 2);
+        if (dbManager->updateProperty(p.id, newName, newLocation, newPrice, newType, newContact, newRooms, newBaths, newArea, newOwnerId)) {
+            textattr(10);
+            cout << "Property updated successfully!";
+        } else {
+            textattr(12);
+            cout << "Failed to update property.";
+        }
+
+        _getch();
     }
 
     // ================= VIEW ALL PROPERTIES (ADMIN VERSION) =================
-    void viewAllPropertiesAdmin(sqlite3* db) {
+    void viewAllPropertiesAdmin(DBManager* dbManager) {
         system("cls");
 
         textattr(11);
         cout << "====== ALL PROPERTIES (ADMIN VIEW) ======\n\n";
+
+        vector<Property> props = dbManager->getAllPropertiesAdmin();
+
+        if (props.empty()) {
+            textattr(12);
+            cout << "No properties found in the system!";
+            _getch();
+            return;
+        }
+
         textattr(240);
-        cout << " ID  | NAME              | LOCATION        | PRICE       | TYPE  | CONTACT      | ROOMS | BATHS | AREA    | OWNER ID | AVAIL\n";
+        cout << " ID  | NAME              | LOCATION        | PRICE       | TYPE  | CONTACT      | ROOMS | BATHS | AREA    | AVAIL\n";
         textattr(15);
 
-        string listSql = "SELECT id, name, location, price, type, InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id, isAvailable FROM properties;";
-        sqlite3_stmt* listStmt;
-
-        if (sqlite3_prepare_v2(db, listSql.c_str(), -1, &listStmt, nullptr) == SQLITE_OK) {
-            bool hasData = false;
-            while (sqlite3_step(listStmt) == SQLITE_ROW) {
-                hasData = true;
-                int id = sqlite3_column_int(listStmt, 0);
-                string name = (const char*)sqlite3_column_text(listStmt, 1);
-                string location = (const char*)sqlite3_column_text(listStmt, 2);
-                double price = sqlite3_column_double(listStmt, 3);
-                string type = (const char*)sqlite3_column_text(listStmt, 4);
-                string contact = (const char*)sqlite3_column_text(listStmt, 5);
-                int rooms = sqlite3_column_int(listStmt, 6);
-                int baths = sqlite3_column_int(listStmt, 7);
-                double area = sqlite3_column_double(listStmt, 8);
-                int ownerId = sqlite3_column_int(listStmt, 9);
-                int available = sqlite3_column_int(listStmt, 10);
-
-                cout << setw(4) << id << " | ";
-                cout << setw(17) << name.substr(0, 17) << " | ";
-                cout << setw(15) << location.substr(0, 15) << " | ";
-                cout << "$" << setw(10) << fixed << setprecision(0) << price << " | ";
-                cout << setw(5) << type << " | ";
-                cout << setw(12) << contact.substr(0, 12) << " | ";
-                cout << setw(5) << rooms << " | ";
-                cout << setw(5) << baths << " | ";
-                cout << setw(7) << fixed << setprecision(1) << area << " | ";
-                cout << setw(8) << ownerId << " | ";
-                cout << (available ? "Yes" : "No") << "\n";
-            }
-
-            if (!hasData) {
-                textattr(12);
-                cout << "\nNo properties found in the system!";
-            }
+        for (size_t i = 0; i < props.size(); i++) {
+            cout << setw(4) << props[i].id << " | ";
+            cout << setw(17) << props[i].name.substr(0, 17) << " | ";
+            cout << setw(15) << props[i].location.substr(0, 15) << " | ";
+            cout << "$" << setw(10) << fixed << setprecision(0) << props[i].price << " | ";
+            cout << setw(5) << props[i].type << " | ";
+            cout << setw(12) << props[i].infoNumber.substr(0, 12) << " | ";
+            cout << setw(5) << props[i].noOfRooms << " | ";
+            cout << setw(5) << props[i].noOfBaths << " | ";
+            cout << setw(7) << fixed << setprecision(1) << props[i].area << " | ";
+            cout << (props[i].available ? "Yes" : "No") << "\n";
         }
-        sqlite3_finalize(listStmt);
 
         _getch();
     }

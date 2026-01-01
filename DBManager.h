@@ -327,7 +327,7 @@ public:
 
         string sql =
             "SELECT id, name, location, price, type, isAvailable, "
-            "InfoNumber, NoOfRooms, NoOfBaths, Area FROM properties WHERE 1=1";
+            "InfoNumber, NoOfRooms, NoOfBaths, Area FROM properties";
 
         if (maxPrice < 999999999)
             sql += " AND price <= ?";
@@ -376,6 +376,335 @@ public:
                 p.noOfRooms = sqlite3_column_int(stmt, 7);
                 p.noOfBaths = sqlite3_column_int(stmt, 8);
                 p.area = sqlite3_column_double(stmt, 9);
+                list.push_back(p);
+            }
+        }
+        sqlite3_finalize(stmt);
+        return list;
+    }
+
+    // ================= OWNER OPERATIONS =================
+
+    // Get all owners (id and name)
+    vector<pair<int, string>> getAllOwners(int limit = 10)
+    {
+        vector<pair<int, string>> owners;
+        if (!db) return owners;
+
+        string sql = "SELECT owner_id, name FROM owners ORDER BY owner_id LIMIT " + to_string(limit) + ";";
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            while (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                int id = sqlite3_column_int(stmt, 0);
+                string name = (const char *)sqlite3_column_text(stmt, 1);
+                owners.push_back(make_pair(id, name));
+            }
+        }
+        sqlite3_finalize(stmt);
+        return owners;
+    }
+
+    // Check if owner exists
+    bool ownerExists(int ownerId)
+    {
+        if (!db) return false;
+
+        string sql = "SELECT owner_id FROM owners WHERE owner_id = ?;";
+        sqlite3_stmt *stmt;
+        bool exists = false;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_int(stmt, 1, ownerId);
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                exists = true;
+            }
+        }
+        sqlite3_finalize(stmt);
+        return exists;
+    }
+
+    // ================= PROPERTY CRUD OPERATIONS =================
+
+    // Get all properties (for admin listing)
+    vector<Property> getAllPropertiesAdmin()
+    {
+        vector<Property> list;
+        if (!db) return list;
+
+        string sql = "SELECT id, name, location, price, type, isAvailable, "
+                     "InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id FROM properties;";
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            while (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                Property p;
+                p.id = sqlite3_column_int(stmt, 0);
+                p.name = (const char *)sqlite3_column_text(stmt, 1);
+                p.location = (const char *)sqlite3_column_text(stmt, 2);
+                p.price = sqlite3_column_double(stmt, 3);
+                p.type = (const char *)sqlite3_column_text(stmt, 4);
+                p.available = sqlite3_column_int(stmt, 5);
+                p.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
+                p.noOfRooms = sqlite3_column_int(stmt, 7);
+                p.noOfBaths = sqlite3_column_int(stmt, 8);
+                p.area = sqlite3_column_double(stmt, 9);
+                list.push_back(p);
+            }
+        }
+        sqlite3_finalize(stmt);
+        return list;
+    }
+
+    // Get property by ID
+    bool getPropertyById(int propertyId, Property &prop)
+    {
+        if (!db) return false;
+
+        string sql = "SELECT id, name, location, price, type, isAvailable, "
+                     "InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id FROM properties WHERE id = ?;";
+        sqlite3_stmt *stmt;
+        bool found = false;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_int(stmt, 1, propertyId);
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                prop.id = sqlite3_column_int(stmt, 0);
+                prop.name = (const char *)sqlite3_column_text(stmt, 1);
+                prop.location = (const char *)sqlite3_column_text(stmt, 2);
+                prop.price = sqlite3_column_double(stmt, 3);
+                prop.type = (const char *)sqlite3_column_text(stmt, 4);
+                prop.available = sqlite3_column_int(stmt, 5);
+                prop.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
+                prop.noOfRooms = sqlite3_column_int(stmt, 7);
+                prop.noOfBaths = sqlite3_column_int(stmt, 8);
+                prop.area = sqlite3_column_double(stmt, 9);
+                found = true;
+            }
+        }
+        sqlite3_finalize(stmt);
+        return found;
+    }
+
+    // Get property by ID with owner_id
+    bool getPropertyByIdWithOwner(int propertyId, Property &prop, int &ownerId)
+    {
+        if (!db) return false;
+
+        string sql = "SELECT id, name, location, price, type, isAvailable, "
+                     "InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id FROM properties WHERE id = ?;";
+        sqlite3_stmt *stmt;
+        bool found = false;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_int(stmt, 1, propertyId);
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                prop.id = sqlite3_column_int(stmt, 0);
+                prop.name = (const char *)sqlite3_column_text(stmt, 1);
+                prop.location = (const char *)sqlite3_column_text(stmt, 2);
+                prop.price = sqlite3_column_double(stmt, 3);
+                prop.type = (const char *)sqlite3_column_text(stmt, 4);
+                prop.available = sqlite3_column_int(stmt, 5);
+                prop.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
+                prop.noOfRooms = sqlite3_column_int(stmt, 7);
+                prop.noOfBaths = sqlite3_column_int(stmt, 8);
+                prop.area = sqlite3_column_double(stmt, 9);
+                ownerId = sqlite3_column_int(stmt, 10);
+                found = true;
+            }
+        }
+        sqlite3_finalize(stmt);
+        return found;
+    }
+
+    // Check if property exists (returns name if found)
+    bool propertyExists(int propertyId, string &propName)
+    {
+        if (!db) return false;
+
+        string sql = "SELECT name FROM properties WHERE id = ?;";
+        sqlite3_stmt *stmt;
+        bool exists = false;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_int(stmt, 1, propertyId);
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                propName = (const char *)sqlite3_column_text(stmt, 0);
+                exists = true;
+            }
+        }
+        sqlite3_finalize(stmt);
+        return exists;
+    }
+
+    // Add new property
+    bool addProperty(const string &name, const string &location, double price,
+                     const string &type, const string &infoNumber,
+                     int rooms, int baths, double area, int ownerId, int &newPropertyId)
+    {
+        if (!db) return false;
+
+        string sql = "INSERT INTO properties (name, location, price, type, isAvailable, "
+                     "InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?);";
+        sqlite3_stmt *stmt;
+        bool success = false;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 2, location.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_double(stmt, 3, price);
+            sqlite3_bind_text(stmt, 4, type.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 5, infoNumber.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(stmt, 6, rooms);
+            sqlite3_bind_int(stmt, 7, baths);
+            sqlite3_bind_double(stmt, 8, area);
+            sqlite3_bind_int(stmt, 9, ownerId);
+
+            if (sqlite3_step(stmt) == SQLITE_DONE)
+            {
+                newPropertyId = (int)sqlite3_last_insert_rowid(db);
+                success = true;
+            }
+        }
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    // Delete property
+    bool deleteProperty(int propertyId)
+    {
+        if (!db) return false;
+
+        string sql = "DELETE FROM properties WHERE id = ?;";
+        sqlite3_stmt *stmt;
+        bool success = false;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_int(stmt, 1, propertyId);
+            if (sqlite3_step(stmt) == SQLITE_DONE)
+            {
+                success = true;
+            }
+        }
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    // Update property
+    bool updateProperty(int propertyId, const string &name, const string &location,
+                        double price, const string &type, const string &infoNumber,
+                        int rooms, int baths, double area, int ownerId)
+    {
+        if (!db) return false;
+
+        string sql = "UPDATE properties SET name=?, location=?, price=?, type=?, "
+                     "InfoNumber=?, NoOfRooms=?, NoOfBaths=?, Area=?, owner_id=? WHERE id=?;";
+        sqlite3_stmt *stmt;
+        bool success = false;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 2, location.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_double(stmt, 3, price);
+            sqlite3_bind_text(stmt, 4, type.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 5, infoNumber.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(stmt, 6, rooms);
+            sqlite3_bind_int(stmt, 7, baths);
+            sqlite3_bind_double(stmt, 8, area);
+            sqlite3_bind_int(stmt, 9, ownerId);
+            sqlite3_bind_int(stmt, 10, propertyId);
+
+            if (sqlite3_step(stmt) == SQLITE_DONE)
+            {
+                success = true;
+            }
+        }
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    // Toggle property availability (lock/unlock)
+    bool togglePropertyAvailability(int propertyId, string &propName, bool &newStatus)
+    {
+        if (!db) return false;
+
+        // First get current status and name
+        string sql = "SELECT isAvailable, name FROM properties WHERE id = ?;";
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_int(stmt, 1, propertyId);
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                int currentStatus = sqlite3_column_int(stmt, 0);
+                propName = (const char *)sqlite3_column_text(stmt, 1);
+                sqlite3_finalize(stmt);
+
+                // Toggle status
+                newStatus = (currentStatus == 0);
+                string updateSql = "UPDATE properties SET isAvailable = ? WHERE id = ?;";
+                sqlite3_stmt *updateStmt;
+
+                if (sqlite3_prepare_v2(db, updateSql.c_str(), -1, &updateStmt, nullptr) == SQLITE_OK)
+                {
+                    sqlite3_bind_int(updateStmt, 1, newStatus ? 1 : 0);
+                    sqlite3_bind_int(updateStmt, 2, propertyId);
+                    bool success = (sqlite3_step(updateStmt) == SQLITE_DONE);
+                    sqlite3_finalize(updateStmt);
+                    return success;
+                }
+            }
+        }
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    // Get properties by owner ID
+    vector<Property> getPropertiesByOwner(int ownerId, string &ownerName)
+    {
+        vector<Property> list;
+        if (!db) return list;
+
+        string sql = "SELECT p.id, p.name, p.location, p.price, p.type, p.isAvailable, "
+                     "p.InfoNumber, p.NoOfRooms, p.NoOfBaths, p.Area, o.name "
+                     "FROM properties p "
+                     "JOIN owners o ON p.owner_id = o.owner_id "
+                     "WHERE o.owner_id = ?;";
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            sqlite3_bind_int(stmt, 1, ownerId);
+            while (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                Property p;
+                p.id = sqlite3_column_int(stmt, 0);
+                p.name = (const char *)sqlite3_column_text(stmt, 1);
+                p.location = (const char *)sqlite3_column_text(stmt, 2);
+                p.price = sqlite3_column_double(stmt, 3);
+                p.type = (const char *)sqlite3_column_text(stmt, 4);
+                p.available = sqlite3_column_int(stmt, 5);
+                p.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
+                p.noOfRooms = sqlite3_column_int(stmt, 7);
+                p.noOfBaths = sqlite3_column_int(stmt, 8);
+                p.area = sqlite3_column_double(stmt, 9);
+                ownerName = (const char *)sqlite3_column_text(stmt, 10);
                 list.push_back(p);
             }
         }
