@@ -47,12 +47,18 @@ public:
         bool filtering = true;
         int selectedFilter = 0;
         const int numOptions = 9;
+        bool needsClear = true;
 
         while (filtering)
         {
-
+            if (needsClear)
+        {
+            system("cls");
+            needsClear = false;
+        }
             drawFilterMenu(selectedFilter, numOptions);
             displayCurrentFilters();
+
 
             int key = _getch();
             if (key == 0 || key == 224)
@@ -65,13 +71,16 @@ public:
             }
             else if (key == 13)
             {
+
                 if (selectedFilter == 6)
                 {
                     viewFilteredResults(db);
+                    needsClear = true;
                 }
                 else if (selectedFilter == 7)
                 {
                     resetFilters();
+                    needsClear = true;
                 }
                 else if (selectedFilter == 8)
                 {
@@ -86,6 +95,7 @@ public:
                 else
                 {
                     handleFilterInput(selectedFilter);
+                    needsClear = true;
                 }
             }
 
@@ -104,6 +114,7 @@ private:
     // =============== Helpers Function ===============
     void drawFilterMenu(int selected, int numOptions)
     {
+
         setAttr(11);
         setXY(20, 2);
         cout << "====================================================";
