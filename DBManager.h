@@ -81,7 +81,7 @@ public:
             "InfoNumber TEXT, "
             "NoOfRooms INTEGER, "
             "NoOfBaths INTEGER, "
-            "Area REAL);"
+            "Area REAL, "
             "owner_id INTEGER, "
             "FOREIGN KEY (owner_id) REFERENCES owners(owner_id));"
 
@@ -91,33 +91,24 @@ public:
             "password TEXT, "
             "isAdmin INTEGER);"
 
-            "CREATE TABLE IF NOT EXISTS appointments ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "user_id INTEGER NOT NULL, "
-            "property_id INTEGER NOT NULL, "
-            "appointment_date TEXT NOT NULL, "
-            "status TEXT DEFAULT 'pending', "
-            "notes TEXT, "
-            "FOREIGN KEY (user_id) REFERENCES users(id), "
-            "FOREIGN KEY (property_id) REFERENCES properties(id));"
-
-            "INSERT OR IGNORE INTO properties "
-            "(name, location, price, type, isAvailable, InfoNumber, NoOfRooms, NoOfBaths, Area) VALUES "
-            "('Ocean View Villa', 'Malibu', 1250000.0, 'Buy', 1, '555-0101', 5, 4, 3500.0),"
-            "('Downtown Apt', 'New York', 3500.0, 'Rent', 1, '555-0202', 2, 1, 850.0),"
-            "('Mountain Cabin', 'Aspen', 450000.0, 'Buy', 0, '555-0303', 3, 2, 1200.0);"
-
             // Insert owners
-            "INSERT OR IGNORE INTO owners (name) VALUES "
-            "('John Doe'),"
-            "('Alice Smith'),"
-            "('Michael Brown');"
-
+            "INSERT OR IGNORE INTO owners (owner_id, name) VALUES "
+            "(1, 'Omar Khaled'),"
+            "(2, 'Mostafa Hendy'),"
+            "(3, 'Eman Hammam'),"
+            "(4, 'Mariam Magdy'),"
+            "(5, 'Abdutalib'),"
+            "(6, 'Omar Alsayeed'),"
+            "(7, 'Mohamed Dawood');"
+               
             // Insert properties with owner_id
-            "INSERT OR IGNORE INTO properties (name, location, price, type, isAvailable, InfoNumber, owner_id) VALUES "
-            "('Ocean View Villa', 'Malibu', 1250000.0, 'Buy', 1, '555-0101', 1),"
-            "('Downtown Apt', 'New York', 3500.0, 'Rent', 1, '555-0202', 2),"
-            "('Mountain Cabin', 'Aspen', 450000.0, 'Buy', 0, '555-0303', 3);"
+            "INSERT OR IGNORE INTO properties (name, location, price, type, isAvailable, InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id) VALUES "
+            "('giza villa', 'giza', 5000.0, 'Buy', 1, '0123456789', 5, 4, 350.0, 1),"
+            "('cairo apartment', 'cairo', 2000.0, 'Rent', 1, '0152468486', 3, 2, 120.0, 2),"
+            "('alexandria villa', 'alexandria', 3000.0, 'Buy', 1, '0112233445', 4, 3, 200.0, 4),"
+            "('giza apartment', 'giza', 2500.0, 'Rent', 1, '0198765432', 2, 1, 100.0, 5),"
+            "('cairo villa', 'cairo', 6000.0, 'Buy', 1, '0176543210', 5, 4, 400.0, 6),"
+            "('alexandria apartment', 'alexandria', 2200.0, 'Rent', 1, '0135792468', 3, 2, 150.0, 7);"
 
             // Insert default users
             "INSERT OR IGNORE INTO users (email, password, isAdmin) VALUES "
@@ -126,7 +117,7 @@ public:
 
         executeQuery(sql);
         // Migration for old databases
-        migrateAddRoomsBathsAndArea();
+        // migrateAddRoomsBathsAndArea();
     }
 
     // ---------------- MIGRATION ----------------
