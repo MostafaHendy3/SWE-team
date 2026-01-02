@@ -16,7 +16,6 @@ int currentUserId = -1;
 string currentUserEmail = "";
 bool isAdmin = false;
 
-/* ================= HEADER ================= */
 
 void drawHeader() {
     textattr(14);
@@ -31,7 +30,6 @@ void drawHeader() {
     gotoxy(35, 8); cout << "--- PROPERTY MANAGEMENT SYSTEM ---";
 }
 
-/* ================= MENU ================= */
 
 void drawMenu(int selected, bool firstDraw)
 {
@@ -100,7 +98,6 @@ void drawMenu(int selected, bool firstDraw)
     textattr(15);
 }
 
-/* ================= ACTIONS ================= */
 
 bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
 {
@@ -116,7 +113,7 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
         switch (choice)
         {
         case 0: pm.ViewAllProperies(db,dbManager); break;
-        case 1: // Login
+        case 1:
             if (um.login(db))
             {
                 isLoggedIn = true;
@@ -158,7 +155,7 @@ bool executeMenuAction(int choice, sqlite3* db, DBManager* dbManager)
     return true;
 }
 
-/* ================= MAIN LOOP ================= */
+//main loop
 
 void runMainMenu(sqlite3* db, DBManager* dbManager)
 {
@@ -195,7 +192,6 @@ void runMainMenu(sqlite3* db, DBManager* dbManager)
     }
 }
 
-/* ================= MAIN ================= */
 
 int main()
 {

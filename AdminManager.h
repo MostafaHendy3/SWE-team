@@ -66,7 +66,6 @@ private:
         textattr(NORMAL_PEN);
     }
 
-    // Display properties table (reusable)
     void displayPropertiesTable(const vector<Property>& props, bool showOwnerId = false) {
         textattr(240);
         if (showOwnerId) {
@@ -78,30 +77,29 @@ private:
 
         for (size_t i = 0; i < props.size(); i++) {
             if (showOwnerId) {
-                cout << setw(4) << props[i].id << " | ";
-                cout << setw(17) << props[i].name.substr(0, 17) << " | ";
-                cout << setw(15) << props[i].location.substr(0, 15) << " | ";
-                cout << "$" << setw(10) << fixed << setprecision(0) << props[i].price << " | ";
-                cout << setw(5) << props[i].type << " | ";
-                cout << setw(12) << props[i].infoNumber.substr(0, 12) << " | ";
-                cout << setw(5) << props[i].noOfRooms << " | ";
-                cout << setw(5) << props[i].noOfBaths << " | ";
-                cout << setw(7) << fixed << setprecision(1) << props[i].area << " | ";
+                cout << setw(4) << props[i].getId() << " | ";
+                cout << setw(17) << props[i].getName().substr(0, 17) << " | ";
+                cout << setw(15) << props[i].getLocation().substr(0, 15) << " | ";
+                cout << "$" << setw(10) << fixed << setprecision(0) << props[i].getPrice() << " | ";
+                cout << setw(5) << props[i].getType() << " | ";
+                cout << setw(12) << props[i].getInfoNumber().substr(0, 12) << " | ";
+                cout << setw(5) << props[i].getNoOfRooms() << " | ";
+                cout << setw(5) << props[i].getNoOfBaths() << " | ";
+                cout << setw(7) << fixed << setprecision(1) << props[i].getArea() << " | ";
                 cout << setw(8) << "N/A" << " | ";
-                cout << (props[i].available ? "Yes" : "No") << "\n";
+                cout << (props[i].getAvailable() ? "Yes" : "No") << "\n";
             } else {
-                cout << setw(5) << props[i].id << " | ";
-                cout << setw(18) << props[i].name.substr(0, 18) << " | ";
-                cout << setw(16) << props[i].location.substr(0, 16) << " | ";
-                cout << "$" << setw(16) << fixed << setprecision(2) << props[i].price << " | ";
-                cout << setw(8) << props[i].type << " | ";
-                cout << (props[i].available ? "Yes" : "No") << "\n";
+                cout << setw(5) << props[i].getId() << " | ";
+                cout << setw(18) << props[i].getName().substr(0, 18) << " | ";
+                cout << setw(16) << props[i].getLocation().substr(0, 16) << " | ";
+                cout << "$" << setw(16) << fixed << setprecision(2) << props[i].getPrice() << " | ";
+                cout << setw(8) << props[i].getType() << " | ";
+                cout << (props[i].getAvailable() ? "Yes" : "No") << "\n";
             }
         }
     }
 
 public:
-    // ================= ADD PROPERTY =================
     void addProperty(DBManager* dbManager) {
         system("cls");
         int width = 50, height = 22;
@@ -151,7 +149,6 @@ public:
         int editorX = startX + 20;
         char** input = multiLineEditor(editorX, startY + 2, maxLen, sr, er, lineno, false);
 
-        // Trim and validate input
         string name = trim(input[0]);
         string location = trim(input[1]);
         string priceStr = trim(input[2]);
@@ -162,11 +159,9 @@ public:
         string areaStr = trim(input[7]);
         string ownerIdStr = trim(input[8]);
 
-        // Free memory
         for (int i = 0; i < lineno; i++) delete[] input[i];
         delete[] input;
 
-        // Validation
         gotoxy(startX + 2, startY + height + 2);
 
         if (name.empty() || location.empty() || priceStr.empty() || type.empty() ||
@@ -178,7 +173,6 @@ public:
             return;
         }
 
-        // Validate type
         if (type != "Buy" && type != "Rent" && type != "buy" && type != "rent") {
             textattr(12);
             cout << "Type must be 'Buy' or 'Rent'!";
@@ -186,7 +180,6 @@ public:
             return;
         }
 
-        // Normalize type
         if (type == "buy") type = "Buy";
         if (type == "rent") type = "Rent";
 
@@ -216,7 +209,6 @@ public:
         _getch();
     }
 
-    // ================= DELETE PROPERTY =================
     void deleteProperty(DBManager* dbManager) {
         system("cls");
 
@@ -235,7 +227,6 @@ public:
 
         displayPropertiesTable(props, false);
 
-        // Input property ID
         cout << "\n";
         textattr(14);
         cout << "Enter Property ID to delete: ";
@@ -254,7 +245,6 @@ public:
             return;
         }
 
-        // Confirmation
         cout << "\n";
         textattr(14);
         cout << "Are you sure you want to delete property: " << propName << "? (Y/N): ";
@@ -281,7 +271,6 @@ public:
         _getch();
     }
 
-    // ================= VIEW PROPERTIES BY OWNER =================
     void viewPropertiesByOwner(DBManager* dbManager) {
         system("cls");
 
@@ -320,22 +309,21 @@ public:
         textattr(15);
 
         for (size_t i = 0; i < props.size(); i++) {
-            cout << setw(4) << props[i].id << " | ";
-            cout << setw(17) << props[i].name.substr(0, 17) << " | ";
-            cout << setw(15) << props[i].location.substr(0, 15) << " | ";
-            cout << "$" << setw(10) << fixed << setprecision(0) << props[i].price << " | ";
-            cout << setw(5) << props[i].type << " | ";
-            cout << setw(12) << props[i].infoNumber.substr(0, 12) << " | ";
-            cout << setw(5) << props[i].noOfRooms << " | ";
-            cout << setw(5) << props[i].noOfBaths << " | ";
-            cout << setw(7) << fixed << setprecision(1) << props[i].area << " | ";
-            cout << (props[i].available ? "Yes" : "No") << "\n";
+            cout << setw(4) << props[i].getId() << " | ";
+            cout << setw(17) << props[i].getName().substr(0, 17) << " | ";
+            cout << setw(15) << props[i].getLocation().substr(0, 15) << " | ";
+            cout << "$" << setw(10) << fixed << setprecision(0) << props[i].getPrice() << " | ";
+            cout << setw(5) << props[i].getType() << " | ";
+            cout << setw(12) << props[i].getInfoNumber().substr(0, 12) << " | ";
+            cout << setw(5) << props[i].getNoOfRooms() << " | ";
+            cout << setw(5) << props[i].getNoOfBaths() << " | ";
+            cout << setw(7) << fixed << setprecision(1) << props[i].getArea() << " | ";
+            cout << (props[i].getAvailable() ? "Yes" : "No") << "\n";
         }
 
         _getch();
     }
 
-    // ================= LOCK/UNLOCK PROPERTY =================
     void lockUnlockProperty(DBManager* dbManager) {
         system("cls");
 
@@ -361,7 +349,6 @@ public:
         _getch();
     }
 
-    // ================= UPDATE PROPERTY =================
     void updateProperty(DBManager* dbManager) {
         system("cls");
 
@@ -407,7 +394,7 @@ public:
         // Display current property info
         gotoxy(startX + 2, startY + 2);
         textattr(11);
-        cout << "Property ID: " << p.id;
+        cout << "Property ID: " << p.getId();
         textattr(NORMAL_PEN);
 
         // Labels
@@ -424,7 +411,7 @@ public:
 
         gotoxy(startX + 2, labelY + 18);
         textattr(8);
-        cout << "Blank = keep: " << p.name.substr(0, 10) << "..";
+        cout << "Blank = keep: " << p.getName().substr(0, 10) << "..";
         textattr(NORMAL_PEN);
 
         // Display owners table OUTSIDE the box on the right side
@@ -443,26 +430,25 @@ public:
         int editorX = startX + 15;
         char** editedLines = multiLineEditor(editorX, labelY, maxLen, sr, er, lineno, false);
 
-        string newName = strlen(editedLines[0]) > 0 ? trim(editedLines[0]) : p.name;
-        string newLocation = strlen(editedLines[1]) > 0 ? trim(editedLines[1]) : p.location;
+        string newName = strlen(editedLines[0]) > 0 ? trim(editedLines[0]) : p.getName();
+        string newLocation = strlen(editedLines[1]) > 0 ? trim(editedLines[1]) : p.getLocation();
         string newPriceStr = trim(editedLines[2]);
-        string newType = strlen(editedLines[3]) > 0 ? trim(editedLines[3]) : p.type;
-        string newContact = strlen(editedLines[4]) > 0 ? trim(editedLines[4]) : p.infoNumber;
+        string newType = strlen(editedLines[3]) > 0 ? trim(editedLines[3]) : p.getType();
+        string newContact = strlen(editedLines[4]) > 0 ? trim(editedLines[4]) : p.getInfoNumber();
         string newRoomsStr = trim(editedLines[5]);
         string newBathsStr = trim(editedLines[6]);
         string newAreaStr = trim(editedLines[7]);
         string newOwnerIdStr = trim(editedLines[8]);
 
-        double newPrice = newPriceStr.empty() ? p.price : stod(newPriceStr);
-        int newRooms = newRoomsStr.empty() ? p.noOfRooms : stoi(newRoomsStr);
-        int newBaths = newBathsStr.empty() ? p.noOfBaths : stoi(newBathsStr);
-        double newArea = newAreaStr.empty() ? p.area : stod(newAreaStr);
+        double newPrice = newPriceStr.empty() ? p.getPrice() : stod(newPriceStr);
+        int newRooms = newRoomsStr.empty() ? p.getNoOfRooms() : stoi(newRoomsStr);
+        int newBaths = newBathsStr.empty() ? p.getNoOfBaths() : stoi(newBathsStr);
+        double newArea = newAreaStr.empty() ? p.getArea() : stod(newAreaStr);
         int newOwnerId = newOwnerIdStr.empty() ? currentOwnerId : stoi(newOwnerIdStr);
 
         for (int i = 0; i < lineno; i++) delete[] editedLines[i];
         delete[] editedLines;
 
-        // Validate type
         if (newType != "Buy" && newType != "Rent" && newType != "buy" && newType != "rent") {
             gotoxy(startX + 2, startY + height + 2);
             textattr(12);
@@ -486,7 +472,7 @@ public:
 
         // Update property using DBManager
         gotoxy(startX + 2, startY + height + 2);
-        if (dbManager->updateProperty(p.id, newName, newLocation, newPrice, newType, newContact, newRooms, newBaths, newArea, newOwnerId)) {
+        if (dbManager->updateProperty(p.getId(), newName, newLocation, newPrice, newType, newContact, newRooms, newBaths, newArea, newOwnerId)) {
             textattr(10);
             cout << "Property updated successfully!";
         } else {
@@ -518,16 +504,16 @@ public:
         textattr(15);
 
         for (size_t i = 0; i < props.size(); i++) {
-            cout << setw(4) << props[i].id << " | ";
-            cout << setw(17) << props[i].name.substr(0, 17) << " | ";
-            cout << setw(15) << props[i].location.substr(0, 15) << " | ";
-            cout << "$" << setw(10) << fixed << setprecision(0) << props[i].price << " | ";
-            cout << setw(5) << props[i].type << " | ";
-            cout << setw(12) << props[i].infoNumber.substr(0, 12) << " | ";
-            cout << setw(5) << props[i].noOfRooms << " | ";
-            cout << setw(5) << props[i].noOfBaths << " | ";
-            cout << setw(7) << fixed << setprecision(1) << props[i].area << " | ";
-            cout << (props[i].available ? "Yes" : "No") << "\n";
+            cout << setw(4) << props[i].getId() << " | ";
+            cout << setw(17) << props[i].getName().substr(0, 17) << " | ";
+            cout << setw(15) << props[i].getLocation().substr(0, 15) << " | ";
+            cout << "$" << setw(10) << fixed << setprecision(0) << props[i].getPrice() << " | ";
+            cout << setw(5) << props[i].getType() << " | ";
+            cout << setw(12) << props[i].getInfoNumber().substr(0, 12) << " | ";
+            cout << setw(5) << props[i].getNoOfRooms() << " | ";
+            cout << setw(5) << props[i].getNoOfBaths() << " | ";
+            cout << setw(7) << fixed << setprecision(1) << props[i].getArea() << " | ";
+            cout << (props[i].getAvailable() ? "Yes" : "No") << "\n";
         }
 
         _getch();

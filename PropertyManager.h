@@ -59,17 +59,17 @@ public:
                 cout << "                                                                                      ";
 
                 setXY(5, rowY);
-                cout << props[i].id;
+                cout << props[i].getId();
                 setXY(12, rowY);
-                cout << props[i].name;
+                cout << props[i].getName();
                 setXY(32, rowY);
-                cout << props[i].location;
+                cout << props[i].getLocation();
                 setXY(52, rowY);
-                cout << "$" << fixed << setprecision(2) << props[i].price;
+                cout << "$" << fixed << setprecision(2) << props[i].getPrice();
                 setXY(68, rowY);
-                cout << props[i].type;
+                cout << props[i].getType();
                 setXY(80, rowY);
-                cout << props[i].area<< " m";
+                cout << props[i].getArea()<< " m";
 
             }
 
@@ -138,28 +138,28 @@ private:
 
             setAttr(14);
             setXY(38, 5);
-            cout << "PROPERTY DOSSIER: " << p.id;
+            cout << "PROPERTY DOSSIER: " << p.getId();
 
             setAttr(15);
             setXY(30, 7);
-            cout << "Name:            " << p.name;
+            cout << "Name:            " << p.getName();
             setXY(30, 8);
-            cout << "Location:        " << p.location;
+            cout << "Location:        " << p.getLocation();
             setXY(30, 9);
-            cout << "No Of Rooms      " << p.noOfRooms;
+            cout << "No Of Rooms      " << p.getNoOfRooms();
             setXY(30, 10);
-            cout << "No Of BathRooms  " << p.noOfBaths;
+            cout << "No Of BathRooms  " << p.getNoOfBaths();
             setXY(30, 11);
-            cout << "Area             " << p.area <<"m";
+            cout << "Area             " << p.getArea() <<"m";
 
 
 
 
 
-            if (p.type == "Rent")
+            if (p.getType() == "Rent")
             {
-                double pricePerDay = p.price;
-                double pricePerMonth = p.price * 30 * 0.8;
+                double pricePerDay = p.getPrice();
+                double pricePerMonth = p.getPrice() * 30 * 0.8;
 
                 setXY(30, 12);
                 cout << "Price/Day:       $" << fixed << setprecision(2) << pricePerDay;
@@ -170,12 +170,12 @@ private:
             {
 
                 setXY(30, 13);
-                cout << "Purchase Price:  $" << fixed << setprecision(2) << p.price;
+                cout << "Purchase Price:  $" << fixed << setprecision(2) << p.getPrice();
             }
 
             setXY(30, 15);
             cout << "Availability:    ";
-            if (!p.available)
+            if (!p.getAvailable())
             {
                 setAttr(12);
                 cout << "LOCKED / UNAVAILABLE";
@@ -183,12 +183,12 @@ private:
             else
             {
                 setAttr(10);
-                cout << "AVAILABLE FOR " << (p.type == "Rent" ? "LEASING" : "SELL");
+                cout << "AVAILABLE FOR " << (p.getType() == "Rent" ? "LEASING" : "SELL");
             }
 
             setAttr(15);
             setXY(30, 18);
-            cout << "Contact:         " << (showHidden ? p.infoNumber : "******** (Unlock Below)");
+            cout << "Contact:         " << (showHidden ? p.getInfoNumber() : "******** (Unlock Below)");
 
             setXY(27, 20);
             setAttr(14);
@@ -231,7 +231,7 @@ private:
                 else
                 {
                     setAttr(240);
-                    cout << " [ PRESS ENTER TO " << (p.type == "Rent" ? "RENT" : "BUY") << " ] ";
+                    cout << " [ PRESS ENTER TO " << (p.getType() == "Rent" ? "RENT" : "BUY") << " ] ";
                     setXY(30, 24);
                     setAttr(15);
                     cout << " [ ESC ] to Cancel ";
@@ -258,7 +258,7 @@ private:
                     }
                     if (selectedOption == 2) exit(0);
                 }
-                else if (p.available)
+                else if (p.getAvailable())
                 {
                     showHidden = true;
                 }

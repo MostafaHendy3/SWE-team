@@ -138,7 +138,6 @@ inline char** multiLineEditor(int xpos, int ypos, int l, char sr[], char er[], i
         }
     }
 
-    // Null terminate lines
     for (int i = 0; i < lineno; i++)
         lines[i][lasts[i]] = '\0';
 

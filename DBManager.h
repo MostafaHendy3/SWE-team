@@ -9,13 +9,6 @@
 
 using namespace std;
 
-struct User
-{
-    int id;
-    string email;
-    bool isAdmin;
-};
-
 class DBManager
 {
 private:
@@ -91,7 +84,6 @@ public:
             "password TEXT, "
             "isAdmin INTEGER);"
 
-            // Insert owners
             "INSERT OR IGNORE INTO owners (owner_id, name) VALUES "
             "(1, 'Omar Khaled'),"
             "(2, 'Mostafa Hendy'),"
@@ -101,7 +93,6 @@ public:
             "(6, 'Omar Alsayeed'),"
             "(7, 'Mohamed Dawood');"
 
-            // Insert properties with owner_id
             "INSERT OR IGNORE INTO properties (name, location, price, type, isAvailable, InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id) VALUES "
             "('giza villa', 'giza', 5000.0, 'Buy', 1, '0123456789', 5, 4, 350.0, 1),"
             "('cairo apartment', 'cairo', 2000.0, 'Rent', 1, '0152468486', 3, 2, 120.0, 2),"
@@ -110,26 +101,19 @@ public:
             "('cairo villa', 'cairo', 6000.0, 'Buy', 1, '0176543210', 5, 4, 400.0, 6),"
             "('alexandria apartment', 'alexandria', 2200.0, 'Rent', 1, '0135792468', 3, 2, 150.0, 7);"
 
-            // Insert default users
             "INSERT OR IGNORE INTO users (email, password, isAdmin) VALUES "
             "('admin@system.com', 'admin123', 1),"
             "('user@system.com', 'user123', 0);";
 
         executeQuery(sql);
-        // Migration for old databases
-        // migrateAddRoomsBathsAndArea();
     }
 
-    // ---------------- MIGRATION ----------------
     void migrateAddRoomsBathsAndArea()
     {
         executeQuery("ALTER TABLE properties ADD COLUMN NoOfRooms INTEGER DEFAULT 0;");
         executeQuery("ALTER TABLE properties ADD COLUMN NoOfBaths INTEGER DEFAULT 0;");
         executeQuery("ALTER TABLE properties ADD COLUMN Area REAL DEFAULT 0;");
     }
-
-    // ---------------- AUTHENTICATION ----------------
-    // Note: Authentication is now handled by UserManager class
 
     // ---------------- PROPERTY OPERATIONS ----------------
     vector<Property> getAllProperties()
@@ -148,16 +132,16 @@ public:
             while (sqlite3_step(stmt) == SQLITE_ROW)
             {
                 Property p;
-                p.id = sqlite3_column_int(stmt, 0);
-                p.name = (const char *)sqlite3_column_text(stmt, 1);
-                p.location = (const char *)sqlite3_column_text(stmt, 2);
-                p.price = sqlite3_column_double(stmt, 3);
-                p.type = (const char *)sqlite3_column_text(stmt, 4);
-                p.available = sqlite3_column_int(stmt, 5);
-                p.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
-                p.noOfRooms = sqlite3_column_int(stmt, 7);
-                p.noOfBaths = sqlite3_column_int(stmt, 8);
-                p.area = sqlite3_column_double(stmt, 9);
+                p.setId(sqlite3_column_int(stmt, 0));
+                p.setName((const char *)sqlite3_column_text(stmt, 1));
+                p.setLocation((const char *)sqlite3_column_text(stmt, 2));
+                p.setPrice(sqlite3_column_double(stmt, 3));
+                p.setType((const char *)sqlite3_column_text(stmt, 4));
+                p.setAvailable(sqlite3_column_int(stmt, 5));
+                p.setInfoNumber((const char *)sqlite3_column_text(stmt, 6));
+                p.setNoOfRooms(sqlite3_column_int(stmt, 7));
+                p.setNoOfBaths(sqlite3_column_int(stmt, 8));
+                p.setArea(sqlite3_column_double(stmt, 9));
                 list.push_back(p);
             }
         }
@@ -213,16 +197,16 @@ public:
             while (sqlite3_step(stmt) == SQLITE_ROW)
             {
                 Property p;
-                p.id = sqlite3_column_int(stmt, 0);
-                p.name = (const char *)sqlite3_column_text(stmt, 1);
-                p.location = (const char *)sqlite3_column_text(stmt, 2);
-                p.price = sqlite3_column_double(stmt, 3);
-                p.type = (const char *)sqlite3_column_text(stmt, 4);
-                p.available = sqlite3_column_int(stmt, 5);
-                p.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
-                p.noOfRooms = sqlite3_column_int(stmt, 7);
-                p.noOfBaths = sqlite3_column_int(stmt, 8);
-                p.area = sqlite3_column_double(stmt, 9);
+                p.setId(sqlite3_column_int(stmt, 0));
+                p.setName((const char *)sqlite3_column_text(stmt, 1));
+                p.setLocation((const char *)sqlite3_column_text(stmt, 2));
+                p.setPrice(sqlite3_column_double(stmt, 3));
+                p.setType((const char *)sqlite3_column_text(stmt, 4));
+                p.setAvailable(sqlite3_column_int(stmt, 5));
+                p.setInfoNumber((const char *)sqlite3_column_text(stmt, 6));
+                p.setNoOfRooms(sqlite3_column_int(stmt, 7));
+                p.setNoOfBaths(sqlite3_column_int(stmt, 8));
+                p.setArea(sqlite3_column_double(stmt, 9));
                 list.push_back(p);
             }
         }
@@ -232,7 +216,6 @@ public:
 
     // ================= OWNER OPERATIONS =================
 
-    // Get all owners (id and name)
     vector<pair<int, string>> getAllOwners(int limit = 10)
     {
         vector<pair<int, string>> owners;
@@ -254,7 +237,6 @@ public:
         return owners;
     }
 
-    // Check if owner exists
     bool ownerExists(int ownerId)
     {
         if (!db) return false;
@@ -292,16 +274,16 @@ public:
             while (sqlite3_step(stmt) == SQLITE_ROW)
             {
                 Property p;
-                p.id = sqlite3_column_int(stmt, 0);
-                p.name = (const char *)sqlite3_column_text(stmt, 1);
-                p.location = (const char *)sqlite3_column_text(stmt, 2);
-                p.price = sqlite3_column_double(stmt, 3);
-                p.type = (const char *)sqlite3_column_text(stmt, 4);
-                p.available = sqlite3_column_int(stmt, 5);
-                p.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
-                p.noOfRooms = sqlite3_column_int(stmt, 7);
-                p.noOfBaths = sqlite3_column_int(stmt, 8);
-                p.area = sqlite3_column_double(stmt, 9);
+                p.setId(sqlite3_column_int(stmt, 0));
+                p.setName((const char *)sqlite3_column_text(stmt, 1));
+                p.setLocation((const char *)sqlite3_column_text(stmt, 2));
+                p.setPrice(sqlite3_column_double(stmt, 3));
+                p.setType((const char *)sqlite3_column_text(stmt, 4));
+                p.setAvailable(sqlite3_column_int(stmt, 5));
+                p.setInfoNumber((const char *)sqlite3_column_text(stmt, 6));
+                p.setNoOfRooms(sqlite3_column_int(stmt, 7));
+                p.setNoOfBaths(sqlite3_column_int(stmt, 8));
+                p.setArea(sqlite3_column_double(stmt, 9));
                 list.push_back(p);
             }
         }
@@ -309,39 +291,6 @@ public:
         return list;
     }
 
-    // Get property by ID
-    bool getPropertyById(int propertyId, Property &prop)
-    {
-        if (!db) return false;
-
-        string sql = "SELECT id, name, location, price, type, isAvailable, "
-                     "InfoNumber, NoOfRooms, NoOfBaths, Area, owner_id FROM properties WHERE id = ?;";
-        sqlite3_stmt *stmt;
-        bool found = false;
-
-        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
-        {
-            sqlite3_bind_int(stmt, 1, propertyId);
-            if (sqlite3_step(stmt) == SQLITE_ROW)
-            {
-                prop.id = sqlite3_column_int(stmt, 0);
-                prop.name = (const char *)sqlite3_column_text(stmt, 1);
-                prop.location = (const char *)sqlite3_column_text(stmt, 2);
-                prop.price = sqlite3_column_double(stmt, 3);
-                prop.type = (const char *)sqlite3_column_text(stmt, 4);
-                prop.available = sqlite3_column_int(stmt, 5);
-                prop.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
-                prop.noOfRooms = sqlite3_column_int(stmt, 7);
-                prop.noOfBaths = sqlite3_column_int(stmt, 8);
-                prop.area = sqlite3_column_double(stmt, 9);
-                found = true;
-            }
-        }
-        sqlite3_finalize(stmt);
-        return found;
-    }
-
-    // Get property by ID with owner_id
     bool getPropertyByIdWithOwner(int propertyId, Property &prop, int &ownerId)
     {
         if (!db) return false;
@@ -356,16 +305,16 @@ public:
             sqlite3_bind_int(stmt, 1, propertyId);
             if (sqlite3_step(stmt) == SQLITE_ROW)
             {
-                prop.id = sqlite3_column_int(stmt, 0);
-                prop.name = (const char *)sqlite3_column_text(stmt, 1);
-                prop.location = (const char *)sqlite3_column_text(stmt, 2);
-                prop.price = sqlite3_column_double(stmt, 3);
-                prop.type = (const char *)sqlite3_column_text(stmt, 4);
-                prop.available = sqlite3_column_int(stmt, 5);
-                prop.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
-                prop.noOfRooms = sqlite3_column_int(stmt, 7);
-                prop.noOfBaths = sqlite3_column_int(stmt, 8);
-                prop.area = sqlite3_column_double(stmt, 9);
+                prop.setId(sqlite3_column_int(stmt, 0));
+                prop.setName((const char *)sqlite3_column_text(stmt, 1));
+                prop.setLocation((const char *)sqlite3_column_text(stmt, 2));
+                prop.setPrice(sqlite3_column_double(stmt, 3));
+                prop.setType((const char *)sqlite3_column_text(stmt, 4));
+                prop.setAvailable(sqlite3_column_int(stmt, 5));
+                prop.setInfoNumber((const char *)sqlite3_column_text(stmt, 6));
+                prop.setNoOfRooms(sqlite3_column_int(stmt, 7));
+                prop.setNoOfBaths(sqlite3_column_int(stmt, 8));
+                prop.setArea(sqlite3_column_double(stmt, 9));
                 ownerId = sqlite3_column_int(stmt, 10);
                 found = true;
             }
@@ -374,7 +323,6 @@ public:
         return found;
     }
 
-    // Check if property exists (returns name if found)
     bool propertyExists(int propertyId, string &propName)
     {
         if (!db) return false;
@@ -396,7 +344,6 @@ public:
         return exists;
     }
 
-    // Add new property
     bool addProperty(const string &name, const string &location, double price,
                      const string &type, const string &infoNumber,
                      int rooms, int baths, double area, int ownerId, int &newPropertyId)
@@ -430,7 +377,6 @@ public:
         return success;
     }
 
-    // Delete property
     bool deleteProperty(int propertyId)
     {
         if (!db) return false;
@@ -451,7 +397,6 @@ public:
         return success;
     }
 
-    // Update property
     bool updateProperty(int propertyId, const string &name, const string &location,
                         double price, const string &type, const string &infoNumber,
                         int rooms, int baths, double area, int ownerId)
@@ -485,7 +430,6 @@ public:
         return success;
     }
 
-    // Toggle property availability (lock/unlock)
     bool togglePropertyAvailability(int propertyId, string &propName, bool &newStatus)
     {
         if (!db) return false;
@@ -522,7 +466,6 @@ public:
         return false;
     }
 
-    // Get properties by owner ID
     vector<Property> getPropertiesByOwner(int ownerId, string &ownerName)
     {
         vector<Property> list;
@@ -541,16 +484,16 @@ public:
             while (sqlite3_step(stmt) == SQLITE_ROW)
             {
                 Property p;
-                p.id = sqlite3_column_int(stmt, 0);
-                p.name = (const char *)sqlite3_column_text(stmt, 1);
-                p.location = (const char *)sqlite3_column_text(stmt, 2);
-                p.price = sqlite3_column_double(stmt, 3);
-                p.type = (const char *)sqlite3_column_text(stmt, 4);
-                p.available = sqlite3_column_int(stmt, 5);
-                p.infoNumber = (const char *)sqlite3_column_text(stmt, 6);
-                p.noOfRooms = sqlite3_column_int(stmt, 7);
-                p.noOfBaths = sqlite3_column_int(stmt, 8);
-                p.area = sqlite3_column_double(stmt, 9);
+                p.setId(sqlite3_column_int(stmt, 0));
+                p.setName((const char *)sqlite3_column_text(stmt, 1));
+                p.setLocation((const char *)sqlite3_column_text(stmt, 2));
+                p.setPrice(sqlite3_column_double(stmt, 3));
+                p.setType((const char *)sqlite3_column_text(stmt, 4));
+                p.setAvailable(sqlite3_column_int(stmt, 5));
+                p.setInfoNumber((const char *)sqlite3_column_text(stmt, 6));
+                p.setNoOfRooms(sqlite3_column_int(stmt, 7));
+                p.setNoOfBaths(sqlite3_column_int(stmt, 8));
+                p.setArea(sqlite3_column_double(stmt, 9));
                 ownerName = (const char *)sqlite3_column_text(stmt, 10);
                 list.push_back(p);
             }

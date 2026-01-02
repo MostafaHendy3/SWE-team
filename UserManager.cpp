@@ -57,9 +57,6 @@ void Backspace(char* line, int* current, int* last)
 }
 
 
-
-
-
 string trim(const char* s)
 {
     string str(s);
@@ -131,14 +128,13 @@ bool UserManager::login(sqlite3* db)
         cout << "[ Sign Up ]";
         textattr(NORMAL_PEN);
 
-        // Back button (new)
+        // Back button
         gotoxy(startX + 14, startY + height + 4);
         if (focused == 3) textattr(BACKGROUND_RED | FOREGROUND_INTENSITY);
         else textattr(FOREGROUND_INTENSITY);
         cout << "[ Back ]";
         textattr(NORMAL_PEN);
 
-        // Hint
         gotoxy(startX + 2, startY + height + 6);
         cout << "up/down arrows to navigate - ENTER to select - ESC to go back";
 
@@ -228,7 +224,7 @@ bool UserManager::login(sqlite3* db)
                 }
             }
         }
-        else if (key == 27) // ESC key → back to main menu
+        else if (key == 27)
         {
             return false;
         }
@@ -307,13 +303,13 @@ bool UserManager::login(sqlite3* db)
         {
             focused = (focused + 1) % 3;
         }
-        else if (key == 13) // Enter
+        else if (key == 13)
         {
-            if (focused == 2) // Back
+            if (focused == 2)
             {
-                return false; // Return to login or main menu
+                return false;
             }
-            else // Edit fields and try signup
+            else
             {
                 char sr[] = { ' ', ' ' };
                 char er[] = { '~', '~' };
@@ -349,7 +345,6 @@ bool UserManager::login(sqlite3* db)
                     continue;
                 }
 
-                // Check if email exists
                 sqlite3_stmt* checkStmt;
                 string checkSQL = "SELECT id FROM users WHERE email=?";
                 if (sqlite3_prepare_v2(db, checkSQL.c_str(), -1, &checkStmt, nullptr) == SQLITE_OK)
@@ -366,7 +361,6 @@ bool UserManager::login(sqlite3* db)
                     sqlite3_finalize(checkStmt);
                 }
 
-                // Insert new user
                 string insertSQL = "INSERT INTO users (email, password, isAdmin) VALUES (?, ?, 0);";
                 sqlite3_stmt* stmt;
                 if (sqlite3_prepare_v2(db, insertSQL.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
@@ -388,7 +382,7 @@ bool UserManager::login(sqlite3* db)
                 _getch();
             }
         }
-        else if (key == 27) // ESC
+        else if (key == 27)
         {
             return false;
         }

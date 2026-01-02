@@ -20,14 +20,33 @@ string toLower(string s)
     return s;
 }
 
-struct SearchFilter
+class SearchFilter
 {
-    double maxPrice = 999999999;
-    string type = ""; // Rent / Buy / empty
-    string location = "";
-    int minRooms = 0;
-    int minBaths = 0;
-    double minArea = 0;
+private:
+    double maxPrice;
+    string type;
+    string location;
+    int minRooms;
+    int minBaths;
+    double minArea;
+
+public:
+    SearchFilter() : maxPrice(999999999), type(""), location(""),
+                     minRooms(0), minBaths(0), minArea(0.0) {}
+
+    double getMaxPrice() const { return maxPrice; }
+    string getType() const { return type; }
+    string getLocation() const { return location; }
+    int getMinRooms() const { return minRooms; }
+    int getMinBaths() const { return minBaths; }
+    double getMinArea() const { return minArea; }
+
+    void setMaxPrice(double price) { maxPrice = price; }
+    void setType(const string &t) { type = t; }
+    void setLocation(const string &loc) { location = loc; }
+    void setMinRooms(int rooms) { minRooms = rooms; }
+    void setMinBaths(int baths) { minBaths = baths; }
+    void setMinArea(double area) { minArea = area; }
 };
 
 class SearchManager
@@ -41,7 +60,6 @@ public:
         dbManager = db;
     }
 
-    // ================= INTERACTIVE FILTER MENU =================
     void interactiveSearch(sqlite3 *db)
     {
         bool filtering = true;
@@ -161,7 +179,6 @@ private:
         setAttr(15);
     }
 
-    // ================= DISPLAY CURRENT FILTERS =================
     void displayCurrentFilters()
     {
         setAttr(14);
@@ -171,22 +188,21 @@ private:
 
         setAttr(10);
         setXY(x, y += 2);
-        cout << "Max Price:   $" << fixed << setprecision(2) << currentFilter.maxPrice;
+        cout << "Max Price:   $" << fixed << setprecision(2) << currentFilter.getMaxPrice();
         setXY(x, ++y);
-        cout << "Type:        " << (currentFilter.type.empty() ? "Any" : currentFilter.type);
+        cout << "Type:        " << (currentFilter.getType().empty() ? "Any" : currentFilter.getType());
         setXY(x, ++y);
-        cout << "Location:    " << (currentFilter.location.empty() ? "Any" : currentFilter.location);
+        cout << "Location:    " << (currentFilter.getLocation().empty() ? "Any" : currentFilter.getLocation());
         setXY(x, ++y);
-        cout << "Rooms        " << currentFilter.minRooms;
+        cout << "Rooms        " << currentFilter.getMinRooms();
         setXY(x, ++y);
-        cout << "Bathrooms    " << currentFilter.minBaths;
+        cout << "Bathrooms    " << currentFilter.getMinBaths();
         setXY(x, ++y);
-        cout << "Area         " << fixed << setprecision(0) << currentFilter.minArea << " m";
+        cout << "Area         " << fixed << setprecision(0) << currentFilter.getMinArea() << " m";
 
         setAttr(15);
     }
 
-    // ================= HANDLE FILTER INPUT =================
     void handleFilterInput(int filterIndex)
     {
         system("cls");
@@ -196,66 +212,89 @@ private:
         switch (filterIndex)
         {
         case 0:
+        {
             cout << "Enter Maximum Price ($): ";
-            cin >> currentFilter.maxPrice;
+            double tempMaxPrice;
+            cin >> tempMaxPrice;
+            currentFilter.setMaxPrice(tempMaxPrice);
             if (cin.fail())
             {
                 cin.clear();
                 cin.ignore(10000, '\n');
-                currentFilter.maxPrice = 999999999;
+                currentFilter.setMaxPrice(999999999);
             }
             break;
+        }
 
         case 1:
+        {
             cout << "Enter Property Type (Rent/Buy or empty): ";
             cin.clear();
-            getline(cin, currentFilter.type);
-            if (toLower(currentFilter.type)=="rent")
-                currentFilter.type = "Rent";
-            else if (toLower(currentFilter.type)== "buy" )
-                currentFilter.type = "Buy";
-            else if (!currentFilter.type.empty())
-                currentFilter.type = "";
+            string tempFilterType;
+            getline(cin, tempFilterType);
+            if (toLower(tempFilterType)=="rent")
+                currentFilter.setType("Rent");
+            else if (toLower(tempFilterType)== "buy" )
+                currentFilter.setType("Buy");
+            else if (!tempFilterType.empty())
+                currentFilter.setType("");
             break;
+        }
 
         case 2:
+        {
             cout << "Enter Location (partial match): ";
             cin.clear();
-            getline(cin, currentFilter.location);
+            string tempLocation;
+            getline(cin, tempLocation);
+            currentFilter.setLocation(tempLocation);
             break;
+        }
 
         case 3:
+        {
             cout << "Enter Minimum Rooms: ";
-            cin >> currentFilter.minRooms;
+            int tempMinRooms;
+            cin >> tempMinRooms;
+            currentFilter.setMinRooms(tempMinRooms);
             if (cin.fail())
             {
                 cin.clear();
                 cin.ignore(10000, '\n');
-                currentFilter.minRooms = 0;
+                currentFilter.setMinRooms(0);
             }
             break;
+        }
 
         case 4:
+        {
             cout << "Enter Minimum Bathrooms: ";
-            cin >> currentFilter.minBaths;
+            int tempMinBaths;
+            cin >> tempMinBaths;
+            currentFilter.setMinBaths(tempMinBaths);
             if (cin.fail())
             {
                 cin.clear();
                 cin.ignore(10000, '\n');
-                currentFilter.minBaths = 0;
+                currentFilter.setMinBaths(0);
             }
             break;
+        }
 
         case 5:
+        {
             cout << "Enter Minimum Area (m): ";
-            cin >> currentFilter.minArea;
+            double tempMinArea;
+            cin >> tempMinArea;
+            currentFilter.setMinArea(tempMinArea);
             if (cin.fail())
             {
                 cin.clear();
                 cin.ignore(10000, '\n');
-                currentFilter.minArea = 0;
+                currentFilter.setMinArea(0);
             }
             break;
+        }
         }
 
         if (filterIndex < 6)
@@ -274,7 +313,7 @@ private:
 
     void viewFilteredResults(sqlite3 *db)
     {
-        auto props = dbManager->filterProperties(currentFilter.maxPrice, currentFilter.type, currentFilter.location, currentFilter.minRooms, currentFilter.minBaths, currentFilter.minArea);
+        auto props = dbManager->filterProperties(currentFilter.getMaxPrice(), currentFilter.getType(), currentFilter.getLocation(), currentFilter.getMinRooms(), currentFilter.getMinBaths(), currentFilter.getMinArea());
         pm.DisplayProperties(props, db, dbManager);
     }
 
