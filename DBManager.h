@@ -128,9 +128,7 @@ public:
         executeQuery("ALTER TABLE properties ADD COLUMN Area REAL DEFAULT 0;");
     }
 
-    // ---------------- AUTHENTICATION ----------------
-    // Note: Authentication is now handled by UserManager class
-
+    
     // ---------------- PROPERTY OPERATIONS ----------------
     vector<Property> getAllProperties()
     {
